@@ -9,14 +9,15 @@ class JsonNode{
 public:
     enum Type{
         T_NULL, // nullptr
-        T_BOOL, // bool
+        T_TRUE, // true
+        T_FALSE, // false
         T_NUMBER, // number -> int
         T_STRING, // string
         T_ARRAY, // array
         T_OBJECT, // object
     };
     JsonNode();
-
+    JsonNode(bool);
     Type type();
 
     string toString();
