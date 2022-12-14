@@ -1,0 +1,5 @@
+# Distribution / packaging
+build
+
+# VisualStudioCode template
+.vscode
