@@ -2,94 +2,86 @@
 
 namespace json{
 
-JsonNode::JsonNode(){
-    this->type_ = T_NULL;
-    this->value_ = nullptr;
-}
+class JsonBoolean: public JsonValue{
+public:
+    JsonBoolean(bool value) : JsonValue(JsonType::Boolean), value_(value) {}
 
-JsonNode::JsonNode(bool value){
-    if(value){
-        this->type_ = T_TRUE;
-    }else{
-        this->type_ = T_FALSE;
-    }
-
-    this->value_ = nullptr;
-}
-
-JsonNode::Type JsonNode::type(){
-    return this->type_;
-}
-
-string JsonNode::toString(){
-    // return "{\"" + this->getKey() + ":" + this->getValue()->toString() + "}";
-    switch (this->type())
-    {
-    case T_NULL: return "null";
-    case T_TRUE: 
-        return "true";
-    case T_FALSE:
-        return "false";
-    default:
-        break;
-    }
-    return "";
-}
-
-
-static void parseWhitespace(const string &in, size_t &index){
-    while(index < in.size()){
-        char c = in[index];
-        if (c == ' ' || c == '\t' || c == '\n' || c == '\r'){
-            index++;
-        }else{
-            break;
+    bool get_boolean() const override { return value_; }
+    string to_string() const{
+        if (value_){
+            return "true";
         }
+        return "false";
+    }
+private:
+    bool value_;
+};
+
+class JsonNull: public JsonValue{
+public:
+    JsonNull(): JsonValue(JsonType::Null){}
+    string to_string() const{
+        return "null";
+    }
+};
+
+static void parseWhitespace(const char *p, size_t &p_index){
+    // 跳过空白字符
+    while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') {
+        p++;
+        p_index++;
     }
 }
 
-static JsonNode parseContant(const string &in, const string temp, size_t &index, JsonNode::Type t){
-    int res = in.compare(0, temp.size(), temp);
-    if(res != 0){
-        throw invalid_argument("Json format error");
+static JsonValue* parseContant(const char *p, size_t &p_index, const char *dst, size_t len){
+    size_t index = 0;
+    while(index < len){
+        if(*p != dst[index]){
+            p -= index;
+            throw runtime_error("format error");
+        }
+        p++;
+        index++;
     }
-    index += temp.size();
-    if(t == JsonNode::T_TRUE){
-        return JsonNode(true);
-    }else if (t == JsonNode::T_FALSE){
-        return JsonNode(false);
+    
+    p_index += len;
+    if(*dst == 'f'){
+        return new JsonBoolean(false);
     }
-    return JsonNode();
+    else if (*dst == 't'){
+        return new JsonBoolean(true);
+    }
+    return new JsonNull();
 }
 
-static JsonNode parseValue(const string &in, size_t &index){
-    switch (in[index])
+static JsonValue* parseValue(const char *p, size_t &p_index){
+    switch (*p)
     {
-    case 'n': return parseContant(in, "null", index, JsonNode::T_NULL);
-    case 'f': return parseContant(in, "false", index, JsonNode::T_FALSE);
-    case 't': return parseContant(in, "true", index, JsonNode::T_TRUE);
+    case 'n':
+        return parseContant(p, p_index, "null", 4);
+    case 'f':
+        return parseContant(p, p_index, "false", 5);
+    case 't':
+        return parseContant(p, p_index, "true", 4);
     default:
         break;
     }
-    return JsonNode();
+    return new JsonNull();
 }
 
-
-
-JsonNode JsonNode::parse(const string &in){
-    size_t index = 0;
-    
-    parseWhitespace(in, index);
-    if(index == in.size()){
-        throw invalid_argument("has no json data");
+JsonValue* parse(const string &in){
+    const char *p = in.c_str();
+    size_t p_index = 0;
+    parseWhitespace(p, p_index);
+    if (p[p_index] == '}' || p[p_index] == '\0') {
+        throw runtime_error("format error");
     }
-    JsonNode node = parseValue(in, index);
-    parseWhitespace(in, index);
-    if(in[index] != '\0'){
-        throw invalid_argument("Json format error, missing terminator");
+    JsonValue* res = parseValue(p, p_index);
+    parseWhitespace(p, p_index);
+    if(p[p_index] != '\0'){
+        throw runtime_error("");
     }
-    return node;
+    return res;
 }
-
 
 }

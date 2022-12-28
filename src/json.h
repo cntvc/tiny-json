@@ -1,31 +1,53 @@
 #pragma once
 #include <iostream>
-#include <memory>
+#include <unordered_map>
+#include <vector>
 using namespace std;
 
 namespace json{
 
-class JsonNode{
+class JsonValue{
 public:
-    enum Type{
-        T_NULL, // nullptr
-        T_TRUE, // true
-        T_FALSE, // false
-        T_NUMBER, // number -> int
-        T_STRING, // string
-        T_ARRAY, // array
-        T_OBJECT, // object
+    enum JsonType{
+        Null = 0,
+        Boolean,
+        String,
+        Array,
+        Object,
+        Number,
     };
-    JsonNode();
-    JsonNode(bool);
-    Type type();
+    JsonValue(JsonType type):type_(type){}
+    virtual ~JsonValue(){}
+    JsonType get_type() const{
+        return type_;
+    }
 
-    string toString();
-    shared_ptr<JsonNode> getValue();
-    static JsonNode parse(const string &);
+    virtual string get_string() const {
+        throw runtime_error("Not a string value");
+    }
+
+    virtual double get_number() const{
+        throw runtime_error("Not a number value");
+    }
+
+    // virtual unordered_map<string, JsonValue>get_object() const{
+    //     throw runtime_error("Not a boolean value");
+    // }
+
+    virtual vector<JsonValue>get_array() const {
+        throw runtime_error("Not a array value");
+    }
+
+    virtual bool get_boolean() const {
+        throw runtime_error("Not a boolean value"); 
+    }
+
+    virtual string to_string() const = 0;
+
 private:
-    Type type_;
-    std::shared_ptr<JsonNode>value_;
+    JsonType type_;
 };
+
+JsonValue* parse(const string &);
 
 }
